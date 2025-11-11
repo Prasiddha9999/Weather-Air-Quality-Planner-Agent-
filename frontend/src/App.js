@@ -23,6 +23,7 @@ function App() {
   const hasInitialized = useRef(false);
   const messageListRef = useRef(null);
   const scrollableElementRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -146,6 +147,46 @@ function App() {
     await createSession(true);
   };
 
+  // Handle copy events to ensure plain text only
+  useEffect(() => {
+    const handleCopy = (e) => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        // Get the selected range
+        const range = selection.getRangeAt(0);
+        
+        // Create a temporary container to extract plain text
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(range.cloneContents());
+        
+        // Extract plain text - this removes all HTML tags and formatting
+        let plainText = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Clean up: preserve line breaks but normalize whitespace
+        // Replace multiple spaces with single space (but keep newlines)
+        plainText = plainText.replace(/[ \t]+/g, ' ');
+        // Replace multiple newlines with double newline max
+        plainText = plainText.replace(/\n{3,}/g, '\n\n');
+        // Trim leading/trailing whitespace
+        plainText = plainText.trim();
+        
+        // Clear clipboard and set plain text only
+        e.clipboardData.clearData();
+        e.clipboardData.setData('text/plain', plainText);
+        
+        // Prevent default to use our plain text data
+        e.preventDefault();
+      }
+    };
+
+    // Add copy event listener to document
+    document.addEventListener('copy', handleCopy);
+    
+    return () => {
+      document.removeEventListener('copy', handleCopy);
+    };
+  }, []);
+
   useEffect(() => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
@@ -158,6 +199,86 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle paste events in input to ensure plain text only
+  useEffect(() => {
+    const handlePaste = (e) => {
+      // Get clipboard data
+      const clipboardData = e.clipboardData || window.clipboardData;
+      if (!clipboardData) return;
+
+      // Get pasted content
+      let pastedText = clipboardData.getData('text/plain');
+      
+      // If no plain text, try to extract from HTML
+      if (!pastedText) {
+        const htmlData = clipboardData.getData('text/html');
+        if (htmlData) {
+          // Create temporary element to extract text
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlData;
+          pastedText = tempDiv.textContent || tempDiv.innerText || '';
+        }
+      }
+
+      // Clean up the text
+      if (pastedText) {
+        // Normalize whitespace but preserve line breaks
+        pastedText = pastedText.replace(/[ \t]+/g, ' ');
+        pastedText = pastedText.replace(/\n{3,}/g, '\n\n');
+        pastedText = pastedText.trim();
+
+        // Prevent default paste
+        e.preventDefault();
+
+        // Insert plain text at cursor position
+        const inputElement = inputRef.current || document.querySelector('.cs-message-input__content-editor');
+        if (inputElement) {
+          const start = inputElement.selectionStart || 0;
+          const end = inputElement.selectionEnd || 0;
+          const currentValue = messageInput;
+          const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
+          setMessageInput(newValue);
+
+          // Set cursor position after pasted text
+          setTimeout(() => {
+            if (inputElement.setSelectionRange) {
+              const newCursorPos = start + pastedText.length;
+              inputElement.setSelectionRange(newCursorPos, newCursorPos);
+              inputElement.focus();
+            }
+          }, 0);
+        }
+      }
+    };
+
+    // Find and attach to input element
+    const attachPasteHandler = () => {
+      const inputElement = document.querySelector('.cs-message-input__content-editor');
+      if (inputElement) {
+        inputElement.addEventListener('paste', handlePaste);
+        inputRef.current = inputElement;
+        return true;
+      }
+      return false;
+    };
+
+    // Try to attach immediately
+    if (!attachPasteHandler()) {
+      // If not found, wait a bit and try again (component might not be mounted yet)
+      const timer = setTimeout(() => {
+        attachPasteHandler();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+
+    return () => {
+      const inputElement = inputRef.current || document.querySelector('.cs-message-input__content-editor');
+      if (inputElement) {
+        inputElement.removeEventListener('paste', handlePaste);
+      }
+    };
+  }, [messageInput]);
 
   // Auto-scroll
   useLayoutEffect(scrollToBottom, [messages.length, isLoading]);

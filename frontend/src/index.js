@@ -17,8 +17,6 @@ if (document.getElementById('root')) {
   const SESSION_API_BASE = '/apps/weather_agent/users';
   let sessionId, userId;
 
-  const getTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   async function createSession() {
     const newSession = `s_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const newUser = `u_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;

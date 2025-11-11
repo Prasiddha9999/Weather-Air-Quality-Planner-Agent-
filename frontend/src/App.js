@@ -23,7 +23,7 @@ function App() {
   const hasInitialized = useRef(false);
   const messageListRef = useRef(null);
   const scrollableElementRef = useRef(null);
-  const inputRef = useRef(null);
+  const inputRef = useRef(null); // Used in paste handler
 
   // Scroll to bottom
   const scrollToBottom = () => {

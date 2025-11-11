@@ -495,6 +495,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
     }
   } catch (error) {
+    // Log error
+    console.error(JSON.stringify({
+      tool: name,
+      args: args,
+      error: error.message,
+      errorCode: error instanceof McpError ? error.code : 'UNKNOWN',
+      status: 'error',
+      timestamp: new Date().toISOString(),
+    }));
+    
     if (error instanceof McpError) {
       throw error;
     }

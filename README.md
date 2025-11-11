@@ -259,14 +259,72 @@ User Question → ADK Web Server → AI Agent → MCP Tools → External APIs �
 
 ## 🧪 Testing
 
-### Test the Agent Directly
+### Automated Tests
+
+The project includes comprehensive unit and integration tests.
+
+#### Install Test Dependencies
+
+**Important**: Activate the virtual environment first!
+
+**Windows (PowerShell):**
+```powershell
+.\venv\Scripts\activate
+pip install -r tests/requirements.txt
+```
+
+**Windows (Git Bash) / Linux / Mac:**
+```bash
+source venv/Scripts/activate  # Windows Git Bash
+# OR
+source venv/bin/activate      # Linux/Mac
+pip install -r tests/requirements.txt
+```
+
+#### Run Unit Tests
+
+```bash
+# Test validation functions
+pytest tests/test_mcp_validation.py -v
+```
+
+#### Run Integration Tests
+
+**Note**: Integration tests require the ADK server to be running.
+
+```bash
+# Start ADK server first
+adk web start
+
+# In another terminal, run integration tests
+pytest tests/test_integration.py -v -s
+```
+
+#### Run All Tests
+
+```bash
+pytest tests/ -v
+```
+
+### Example Transcripts
+
+Golden transcripts are available in `tests/transcripts/` that document expected behavior:
+- Basic weather queries
+- Air quality focus queries
+- Comparison queries
+
+See [tests/README.md](tests/README.md) for detailed testing documentation.
+
+### Manual Testing
+
+#### Test the Agent Directly
 
 ```bash
 # Make sure venv is activated
 python -m weather_agent.agent
 ```
 
-### Test with cURL
+#### Test with cURL
 
 ```bash
 curl -X POST http://localhost:8000/run \
@@ -283,6 +341,16 @@ curl -X POST http://localhost:8000/run \
 ```
 
 For more API examples, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+
+### Logging
+
+The MCP server logs all tool calls and errors in JSON format:
+- Tool name and arguments
+- Latency measurements
+- Success/error status
+- Timestamps
+
+Check the ADK server console output to view logs.
 
 ---
 
